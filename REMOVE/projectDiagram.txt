@@ -1,0 +1,135 @@
+@startuml
+
+
+left to right direction
+skinparam diagramMargin 50
+skinparam packageMargin 20
+
+record "MessagePayload" {
+    std::string  rawMessage
+    std::vector<std::string>  tokenizedMessage
+}
+
+frame PersistenceModule {
+
+    frame Models {
+    
+        class User {
+            int  fileDescriptor
+            std::string  username
+            std::string  password
+            ...
+        }
+    
+        class Channel {
+            std::vector<User&> usersInChannel
+            bool inviteOnlyPolicy
+            std::string channelPassword
+            int maxUsersAmount
+            ...
+        }
+    
+    }
+    
+    frame Repositories {
+        
+        class UserRepository {
+    
+            std::map<std::string, User> usersByUsername
+            std::map<int, User> usersByFileDescriptor
+    
+            +User  findUserByUsername(std::string username)
+            +User  findUserByFileDescriptor(int fd)
+            +bool  createUser(int fd, std::string username, std::string password)
+            +bool  removeUserByUsername(std::string username)
+            +bool  removeUserByFd(int fd)
+        }
+        
+        class ChannelRepository {
+            std::map<std::string, Channel> channelsByChannelName
+            
+            +Channel  findChannelByChannelName(std::string channelName)
+            +bool  createChannel(std::string channelName)
+            +bool  exists(std::string channelName)
+            +bool  removeChannel(std::string channelName)
+        
+        }
+            
+    }
+
+}
+
+frame CommandModule {
+
+    frame Services {
+    
+        class CommandProcessor {
+            std::map<std::string, BaseCommand> commands
+            
+            +void  executeCommand(int fd, MessagePayload payload)
+    
+        }
+    
+        abstract class  BaseCommand {
+            UserRepository&  userRepository
+            ChannelRepository&  channelRepository
+        
+            -void  execute(int fd, MessagePayload payload)
+        }
+
+        class KickCommand {
+            UserRepository&  userRepository
+            ChannelRepository&  channelRepository
+        
+            +void  execute(int fd, MessagePayload payload)
+        }
+
+        class InviteCommand {
+            UserRepository&  userRepository
+            ChannelRepository&  channelRepository
+        
+            +void  execute(int fd, MessagePayload payload)
+        }
+
+        class TopicCommand {
+            UserRepository&  userRepository
+            ChannelRepository&  channelRepository
+        
+            +void  execute(int fd, MessagePayload payload)
+        }
+
+        class ModeCommand {
+            UserRepository&  userRepository
+            ChannelRepository&  channelRepository
+    
+            +void  execute(int fd, MessagePayload payload)
+        }
+        
+        class JoinCommand {
+            UserRepository&  userRepository
+            ChannelRepository&  channelRepository
+    
+            +void  execute(int fd, MessagePayload payload)
+        }
+        
+        class PrivMsgCommand {
+            UserRepository&  userRepository
+            ChannelRepository&  channelRepository
+    
+            +void  execute(int fd, MessagePayload payload)
+        }
+
+        BaseCommand <|.. KickCommand
+        BaseCommand <|.. InviteCommand
+        BaseCommand <|.. TopicCommand
+        BaseCommand <|.. ModeCommand
+        BaseCommand <|.. JoinCommand
+        BaseCommand <|.. PrivMsgCommand
+    
+    }
+
+}
+
+}
+
+@enduml
