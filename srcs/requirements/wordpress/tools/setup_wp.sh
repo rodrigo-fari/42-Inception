@@ -1,11 +1,42 @@
 #!/bin/sh
-# ------------------------------| setup_wp.sh - Setup WordPress Script |
+set -e
+
+# Support both naming conventions: new (MYSQL_*) and current (.env: DB_*)
+MYSQL_DATABASE="${DB_NAME:-${MYSQL_DATABASE}}"
+MYSQL_USER="${DB_USER:-${MYSQL_USER}}"
+MYSQL_PASSWORD="${DB_PASS:-${MYSQL_PASSWORD}}"
+MYSQL_ROOT_PASSWORD="${DB_ROOT_PASS:-${MYSQL_ROOT_PASSWORD}}"
+WP_ADMIN_USER="${WP_ADMIN:-${WP_ADMIN_USER}}"
+WP_ADMIN_PASSWORD="${WP_ADMIN_PASS:-${WP_ADMIN_PASSWORD}}"
+WP_ADMIN_EMAIL="${WP_ADMIN}@${DOMAIN_NAME}"
+WP_USER="${WP_USER}"
+WP_USER_EMAIL="${WP_USER_EMAIL}"
+WP_USER_PASSWORD="${WP_USER_PASS:-${WP_USER_PASSWORD}}"
+
+# Create .my.cnf for MySQL client authentication
+cat > ~/.my.cnf << EOF
+[client]
+host=mariadb
+user=${MYSQL_USER}
+password=${MYSQL_PASSWORD}
+EOF
+chmod 600 ~/.my.cnf
 
 # ----------| Wait MariaDB to be ready |
-echo "Waiting on MariaDB to be fully setup..."
-while ! mysqladmin ping -h mariadb --silent; do
+echo "Waiting for MariaDB..."
+echo "Using credentials: user=${MYSQL_USER}, db=${MYSQL_DATABASE}"
+until mysqladmin -h mariadb -u root -p"${MYSQL_ROOT_PASSWORD}" --silent ping >/dev/null 2>&1; do
 	sleep 2
 done
+echo "MariaDB is ready!"
+
+# ----------| Verify WordPress user can connect |
+echo "Verifying WordPress user credentials..."
+until mysql "${MYSQL_DATABASE}" -e "SELECT 1;" >/dev/null 2>&1; do
+	echo "WordPress user cannot connect yet, retrying..."
+	sleep 2
+done
+echo "WordPress user can connect!"
 
 # ----------| Download wp-cli (WP's command line tool) |
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /usr/local/bin/wp
@@ -43,7 +74,11 @@ if ! /usr/local/bin/wp core is-installed --path=/var/www/html --allow-root; then
 fi
 
 # ----------| Check permitions |
-chown -R nobody:nobody /var/www/html
+chown -R www-data:www-data /var/www/html
+
+# ----------| Ensure PHP-FPM runtime directory exists |
+mkdir -p /run/php
+chown -R www-data:www-data /run/php
 
 # ----------| Init PHP-FPM foregrounded (PID1) |
-exec php-fpm83 -F
+exec php-fpm7.4 -F

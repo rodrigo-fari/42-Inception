@@ -20,8 +20,11 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 RUN rm -f /etc/nginx/sites-enabled/default \
     && rm -f /etc/nginx/sites-available/default
 
-# ----------| Copy custom NGINX configuration |
-COPY conf/nginx.conf /etc/nginx/nginx.conf
+# ----------| Copy custom NGINX site configuration |
+COPY conf/nginx.conf /etc/nginx/sites-available/default
+
+# ----------| Enable custom site configuration |
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # ----------| Expose HTTPS port only (TLSv1.2/TLSv1.3) |
 EXPOSE 443

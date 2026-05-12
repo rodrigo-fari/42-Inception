@@ -104,24 +104,27 @@ prune:
 		echo "$(YELLOW)❌ Prune cancelled.$(RESET)"; \
 	fi
 
+redebug:
+	docker system prune -a --volumes -f && sudo rm -rf /home/rde-fari/data/* && mkdir /home/rde-fari/data/mariadb && mkdir /home/rde-fari/data/wordpress && make re
+
 # ----------| Show help menu (default for unknown commands) |
 help:
 	@echo "$(BOLD)$(CYAN)╔═══════════════════════════════════════════════════════════════╗$(RESET)"
-	@echo "$(BOLD)$(CYAN)║$(RESET)              $(BOLD)INCEPTION PROJECT - COMMANDS$(RESET)                      $(CYAN)║$(RESET)"
+	@echo "$(BOLD)$(CYAN)║$(RESET)                $(BOLD)INCEPTION PROJECT - COMMANDS$(RESET)                   $(CYAN)║$(RESET)"
 	@echo "$(BOLD)$(CYAN)╚═══════════════════════════════════════════════════════════════╝$(RESET)"
 	@echo ""
 	@echo "$(GREEN)📦 Core Commands:$(RESET)"
-	@echo "  $(YELLOW)make$(RESET)          - Build and start all containers"
-	@echo "  $(YELLOW)make down$(RESET)      - Stop and remove containers"
-	@echo "  $(YELLOW)make clean$(RESET)     - Stop containers + prune unused resources"
-	@echo "  $(YELLOW)make fclean$(RESET)    - Full cleanup (removes volumes too)"
-	@echo "  $(YELLOW)make re$(RESET)        - Rebuild everything from scratch"
+	@echo "  $(YELLOW)make$(RESET)             - Build and start all containers"
+	@echo "  $(YELLOW)make down$(RESET)        - Stop and remove containers"
+	@echo "  $(YELLOW)make clean$(RESET)       - Stop containers + prune unused resources"
+	@echo "  $(YELLOW)make fclean$(RESET)      - Full cleanup (removes volumes too)"
+	@echo "  $(YELLOW)make re$(RESET)          - Rebuild everything from scratch"
 	@echo ""
 	@echo "$(BLUE)📊 Monitoring:$(RESET)"
-	@echo "  $(YELLOW)make status$(RESET)    - Show container status"
-	@echo "  $(YELLOW)make logs$(RESET)      - Follow live logs"
-	@echo "  $(YELLOW)make health$(RESET)    - Check if containers are healthy"
-	@echo "  $(YELLOW)make df$(RESET)        - Show Docker disk usage"
+	@echo "  $(YELLOW)make status$(RESET)      - Show container status"
+	@echo "  $(YELLOW)make logs$(RESET)        - Follow live logs"
+	@echo "  $(YELLOW)make health$(RESET)      - Check if containers are healthy"
+	@echo "  $(YELLOW)make df$(RESET)          - Show Docker disk usage"
 	@echo ""
 	@echo "$(CYAN)🕐 Shell Access:$(RESET)"
 	@echo "  $(YELLOW)make shell-nginx$(RESET) - Open shell in NGINX container"
@@ -130,7 +133,7 @@ help:
 	@echo "  $(YELLOW)make mysql$(RESET)       - Connect to MySQL CLI"
 	@echo ""
 	@echo "$(RED)⚠️  Dangerous:$(RESET)"
-	@echo "  $(YELLOW)make prune$(RESET)      - Remove EVERYTHING unused (asks confirmation)"
+	@echo "  $(YELLOW)make prune$(RESET)       - Remove EVERYTHING unused (asks confirmation)"
 	@echo ""
 	@echo "$(BOLD)$(CYAN)═══════════════════════════════════════════════════════════════$(RESET)"
 

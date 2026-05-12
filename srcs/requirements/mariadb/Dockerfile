@@ -23,4 +23,4 @@ VOLUME ["/var/lib/mysql"]
 EXPOSE 3306
 
 # ----------| Start MariaDB in foreground (PID 1) - no infinite loops |
-CMD ["/usr/local/bin/init_db.sh"]
+ENTRYPOINT ["/usr/local/bin/init_db.sh"]

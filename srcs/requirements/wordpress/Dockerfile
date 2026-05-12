@@ -8,12 +8,14 @@ RUN apt-get update && apt-get install -y \
     php7.4-curl \
     php7.4-xml \
     php7.4-mbstring \
+    mariadb-client \
     wget \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # ----------| Create document root directory for WordPress |
-RUN mkdir -p /var/www/html && \
+RUN mkdir -p /var/www/html /run/php && \
+    chown -R www-data:www-data /run/php && \
     chown -R www-data:www-data /var/www/html
 
 # ----------| Download and extract latest WordPress |
