@@ -10,7 +10,7 @@ services:
     ports:
       - "443:443"
     volumes:
-      - wordpress_files:/var/www/html
+      - wordpress_data:/var/www/html
     networks:
       - inception_network
     depends_on:
@@ -24,12 +24,12 @@ services:
     build: ./requirements/wordpress
     container_name: wordpress
     volumes:
-      - wordpress_files:/var/www/html
+      - wordpress_data:/var/www/html
     networks:
       - inception_network
     depends_on:
       - mariadb
-    # restart: always
+    restart: on-failure
     env_file:
       - ../.env
 
@@ -47,10 +47,16 @@ services:
 
 # ----------| Volumes (data percistence) |
 volumes:
-  wordpress_files:
-    name: wordpress_files
+  wordpress_data:
+    driver_opts:
+      type: none
+      device: ${HOME}/data/wordpress
+      o: bind
   mariadb_data:
-    name: mariadb_data
+    driver_opts:
+      type: none
+      device: ${HOME}/data/mariadb
+      o: bind
 
 # ----------| Internal network |
 networks:

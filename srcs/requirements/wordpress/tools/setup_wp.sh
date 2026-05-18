@@ -24,7 +24,6 @@ chmod 600 ~/.my.cnf
 
 # ----------| Wait MariaDB to be ready |
 echo "Waiting for MariaDB..."
-echo "Using credentials: user=${MYSQL_USER}, db=${MYSQL_DATABASE}"
 until mysqladmin -h mariadb -u root -p"${MYSQL_ROOT_PASSWORD}" --silent ping >/dev/null 2>&1; do
 	sleep 2
 done

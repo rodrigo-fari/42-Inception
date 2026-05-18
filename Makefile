@@ -11,15 +11,15 @@ BOLD   := \033[1m
 
 # ----------| Variables |
 DOCKER_COMPOSE := docker compose -f ./srcs/docker-compose.yml
-DOCKER_VOLUMES := wordpress_files mariadb_data
+DOCKER_VOLUMES := wordpress_data mariadb_data
 
 # ----------| Default target |
-all:
+up:
 	@echo "$(BOLD)$(CYAN)╔════════════════════════════════════════════════════════════╗$(RESET)"
 	@echo "$(BOLD)$(CYAN)║$(RESET)             $(GREEN)🚀 INCEPTION - BUILDING CONTAINERS$(RESET)             $(CYAN)║$(RESET)"
 	@echo "$(BOLD)$(CYAN)╚════════════════════════════════════════════════════════════╝$(RESET)"
 	@echo "$(YELLOW)📦 Building and starting all containers...$(RESET)"
-	@$(DOCKER_COMPOSE) up --build
+	@$(DOCKER_COMPOSE) up --build --detach
 
 # ----------| Stop and remove containers (but keep volumes) |
 down:
@@ -41,7 +41,7 @@ fclean: clean
 	@echo "$(GREEN)✅ Full cleanup completed.$(RESET)"
 
 # ----------| Rebuild everything from scratch |
-re: fclean all
+re: fclean up
 	@echo "$(GREEN)✅ Rebuild completed successfully!$(RESET)"
 
 # ----------| Show status of running containers |
@@ -49,49 +49,10 @@ status:
 	@echo "$(BLUE)📊 Container status:$(RESET)"
 	@$(DOCKER_COMPOSE) ps
 
-# ----------| Show live logs from all containers |
-logs:
-	@echo "$(BLUE)📜 Following logs (Ctrl+C to exit):$(RESET)"
-	@$(DOCKER_COMPOSE) logs -f
-
-# ----------| Access NGINX container shell |
-shell-nginx:
-	@echo "$(CYAN)🕐 Entering NGINX container shell...$(RESET)"
-	@docker exec -it nginx sh
-
-# ----------| Access WordPress container shell |
-shell-wp:
-	@echo "$(CYAN)🕐 Entering WordPress container shell...$(RESET)"
-	@docker exec -it wordpress sh
-
-# ----------| Access MariaDB container shell |
-shell-db:
-	@echo "$(CYAN)🕐 Entering MariaDB container shell...$(RESET)"
-	@docker exec -it mariadb sh
-
 # ----------| Access MySQL CLI inside MariaDB container |
 mysql:
 	@echo "$(CYAN)🕐 Connecting to MySQL...$(RESET)"
 	@docker exec -it mariadb mysql -u root -p
-
-# ----------| Check if containers are healthy |
-health:
-	@echo "$(BLUE)🕐 Checking container health...$(RESET)"
-	@for container in nginx wordpress mariadb; do \
-		STATUS=$$(docker inspect --format='{{.State.Status}}' $$container 2>/dev/null); \
-		if [ "$$STATUS" = "running" ]; then \
-			echo "$(GREEN)✅ $$container is running$(RESET)"; \
-		elif [ "$$STATUS" = "" ]; then \
-			echo "$(RED)❌ $$container does not exist$(RESET)"; \
-		else \
-			echo "$(RED)❌ $$container is $$STATUS$(RESET)"; \
-		fi \
-	done
-
-# ----------| Display disk usage of Docker (images, containers, volumes) |
-df:
-	@echo "$(YELLOW)💾 Docker disk usage:$(RESET)"
-	@docker system df
 
 # ----------| Prune everything aggressively (use with caution) |
 prune:
@@ -103,9 +64,6 @@ prune:
 	else \
 		echo "$(YELLOW)❌ Prune cancelled.$(RESET)"; \
 	fi
-
-redebug:
-	docker system prune -a --volumes -f && sudo rm -rf /home/rde-fari/data/* && mkdir /home/rde-fari/data/mariadb && mkdir /home/rde-fari/data/wordpress && make re
 
 # ----------| Show help menu (default for unknown commands) |
 help:
@@ -122,14 +80,8 @@ help:
 	@echo ""
 	@echo "$(BLUE)📊 Monitoring:$(RESET)"
 	@echo "  $(YELLOW)make status$(RESET)      - Show container status"
-	@echo "  $(YELLOW)make logs$(RESET)        - Follow live logs"
-	@echo "  $(YELLOW)make health$(RESET)      - Check if containers are healthy"
-	@echo "  $(YELLOW)make df$(RESET)          - Show Docker disk usage"
 	@echo ""
 	@echo "$(CYAN)🕐 Shell Access:$(RESET)"
-	@echo "  $(YELLOW)make shell-nginx$(RESET) - Open shell in NGINX container"
-	@echo "  $(YELLOW)make shell-wp$(RESET)    - Open shell in WordPress container"
-	@echo "  $(YELLOW)make shell-db$(RESET)    - Open shell in MariaDB container"
 	@echo "  $(YELLOW)make mysql$(RESET)       - Connect to MySQL CLI"
 	@echo ""
 	@echo "$(RED)⚠️  Dangerous:$(RESET)"
@@ -144,4 +96,4 @@ help:
 	@$(MAKE) -s help
 
 # ----------| Declare phony targets (not actual files) |
-.PHONY: all down clean fclean re status logs shell-nginx shell-wp shell-db mysql health df prune help
+.PHONY: up down clean fclean re status mysql prune help

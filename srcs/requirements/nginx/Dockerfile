@@ -14,7 +14,7 @@ RUN mkdir -p /run/nginx /var/www/html /etc/nginx/ssl
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /etc/nginx/ssl/inception.key \
     -out /etc/nginx/ssl/inception.crt \
-    -subj "/C=PT/ST=Lisbon/L=Lisbon/O=42/CN=${DOMAIN_NAME}"
+    -subj "/C=PT/ST=Porto/L=Porto/O=42/CN=${DOMAIN_NAME}"
 
 # ----------| Remove default NGINX configuration |
 RUN rm -f /etc/nginx/sites-enabled/default \
