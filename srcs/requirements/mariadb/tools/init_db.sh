@@ -8,6 +8,38 @@ MYSQL_DATABASE="${DB_NAME:-${MYSQL_DATABASE}}"
 MYSQL_USER="${DB_USER:-${MYSQL_USER}}"
 MYSQL_PASSWORD="${DB_PASS:-${MYSQL_PASSWORD}}"
 MYSQL_ROOT_PASSWORD="${DB_ROOT_PASS:-${MYSQL_ROOT_PASSWORD}}"
+MYSQL_SOCKET="/run/mysqld/mysqld.sock"
+
+: "${MYSQL_DATABASE:?MYSQL_DATABASE/DB_NAME is required}"
+: "${MYSQL_USER:?MYSQL_USER/DB_USER is required}"
+: "${MYSQL_PASSWORD:?MYSQL_PASSWORD/DB_PASS is required}"
+: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD/DB_ROOT_PASS is required}"
+
+wait_for_mysql() {
+	max_retries=60
+	retry=0
+
+	until mysqladmin --protocol=socket --socket="${MYSQL_SOCKET}" ping --silent; do
+		retry=$((retry + 1))
+		if [ "$retry" -ge "$max_retries" ]; then
+			echo "MariaDB did not become ready after ${max_retries} seconds"
+			exit 1
+		fi
+		echo "Waiting for MariaDB startup (${retry}/${max_retries})..."
+		sleep 1
+	done
+}
+
+MYSQLD_PID=""
+cleanup_temp_mysql() {
+	if [ -n "$MYSQLD_PID" ] && [ -d "/proc/${MYSQLD_PID}" ]; then
+		echo "Stopping temporary MariaDB process..."
+		kill "$MYSQLD_PID"
+		wait "$MYSQLD_PID" || true
+	fi
+}
+
+trap cleanup_temp_mysql EXIT
 
 DB_ALREADY_INITIALIZED=0
 # ----------| Check if database is already initialized |
@@ -22,20 +54,17 @@ else
 fi
 
 # ----------| Start temporary MySQL instance without networking for configuration |
-echo "Starting temporary MySQL instance for configuration..."
-mysqld --user=mysql --datadir=/var/lib/mysql --skip-networking &
+echo "Starting temporary MariaDB instance for configuration..."
+mysqld --user=mysql --datadir=/var/lib/mysql --skip-networking --socket="${MYSQL_SOCKET}" &
 MYSQLD_PID=$!
-trap 'kill "$MYSQLD_PID" 2>/dev/null || true' EXIT
 
 # ----------| Wait for MySQL to be ready |
-until mysqladmin ping --silent >/dev/null 2>&1; do
-	sleep 1
-done
-echo "MySQL ready for configuration"
+wait_for_mysql
+echo "MariaDB ready for configuration"
 
 # ----------| Execute SQL commands to ensure proper database/user setup (idempotent) |
 if [ "$DB_ALREADY_INITIALIZED" -eq 1 ]; then
-	mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" << EOF
+	mysql --protocol=socket --socket="${MYSQL_SOCKET}" -uroot -p"${MYSQL_ROOT_PASSWORD}" << EOF
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 FLUSH PRIVILEGES;
@@ -53,7 +82,7 @@ ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 FLUSH PRIVILEGES;
 EOF
 else
-	mysql -uroot << EOF
+	mysql --protocol=socket --socket="${MYSQL_SOCKET}" -uroot << EOF
 -- Clean up anonymous users
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
@@ -76,8 +105,12 @@ fi
 echo "Database configuration complete"
 
 # ----------| Shutdown temp instance |
-mysqladmin -uroot -p"${MYSQL_ROOT_PASSWORD}" shutdown
-wait "$MYSQLD_PID" 2>/dev/null || true
+if [ "$DB_ALREADY_INITIALIZED" -eq 1 ]; then
+	mysqladmin --protocol=socket --socket="${MYSQL_SOCKET}" -uroot -p"${MYSQL_ROOT_PASSWORD}" shutdown
+else
+	mysqladmin --protocol=socket --socket="${MYSQL_SOCKET}" -uroot shutdown
+fi
+wait "$MYSQLD_PID" || true
 trap - EXIT
 sleep 2
 

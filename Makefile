@@ -12,7 +12,7 @@ BOLD   := \033[1m
 # ----------| Variables |
 DOCKER_COMPOSE := docker compose -f ./srcs/docker-compose.yml
 DOCKER_VOLUMES := wordpress_data mariadb_data
-DATA_DIR := $(HOME)/data
+DATA_DIR := $(HOME)/data/wordpress $(HOME)/data/mariadb
 
 # ----------| Default target |
 up:

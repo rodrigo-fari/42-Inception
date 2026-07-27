@@ -13,6 +13,47 @@ WP_USER="${WP_USER}"
 WP_USER_EMAIL="${WP_USER_EMAIL}"
 WP_USER_PASSWORD="${WP_USER_PASS:-${WP_USER_PASSWORD}}"
 
+: "${MYSQL_DATABASE:?MYSQL_DATABASE/DB_NAME is required}"
+: "${MYSQL_USER:?MYSQL_USER/DB_USER is required}"
+: "${MYSQL_PASSWORD:?MYSQL_PASSWORD/DB_PASS is required}"
+: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD/DB_ROOT_PASS is required}"
+: "${DOMAIN_NAME:?DOMAIN_NAME is required}"
+: "${WP_ADMIN_USER:?WP_ADMIN/WP_ADMIN_USER is required}"
+: "${WP_ADMIN_PASSWORD:?WP_ADMIN_PASS/WP_ADMIN_PASSWORD is required}"
+: "${WP_USER:?WP_USER is required}"
+: "${WP_USER_EMAIL:?WP_USER_EMAIL is required}"
+: "${WP_USER_PASSWORD:?WP_USER_PASS/WP_USER_PASSWORD is required}"
+
+wait_for_db_ping() {
+	max_retries=60
+	retry=0
+
+	until mysqladmin -h mariadb -u root -p"${MYSQL_ROOT_PASSWORD}" ping --silent; do
+		retry=$((retry + 1))
+		if [ "$retry" -ge "$max_retries" ]; then
+			echo "MariaDB did not respond to ping after ${max_retries} retries"
+			exit 1
+		fi
+		echo "Waiting for MariaDB (${retry}/${max_retries})..."
+		sleep 2
+	done
+}
+
+wait_for_app_user() {
+	max_retries=60
+	retry=0
+
+	until mysql -h mariadb -u "${MYSQL_USER}" -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE}" -e "SELECT 1"; do
+		retry=$((retry + 1))
+		if [ "$retry" -ge "$max_retries" ]; then
+			echo "WordPress DB user failed to connect after ${max_retries} retries"
+			exit 1
+		fi
+		echo "WordPress DB user not ready yet (${retry}/${max_retries})..."
+		sleep 2
+	done
+}
+
 # Create .my.cnf for MySQL client authentication
 cat > ~/.my.cnf << EOF
 [client]
@@ -24,17 +65,12 @@ chmod 600 ~/.my.cnf
 
 # ----------| Wait MariaDB to be ready |
 echo "Waiting for MariaDB..."
-until mysqladmin -h mariadb -u root -p"${MYSQL_ROOT_PASSWORD}" --silent ping >/dev/null 2>&1; do
-	sleep 2
-done
+wait_for_db_ping
 echo "MariaDB is ready!"
 
 # ----------| Verify WordPress user can connect |
 echo "Verifying WordPress user credentials..."
-until mysql "${MYSQL_DATABASE}" -e "SELECT 1;" >/dev/null 2>&1; do
-	echo "WordPress user cannot connect yet, retrying..."
-	sleep 2
-done
+wait_for_app_user
 echo "WordPress user can connect!"
 
 # ----------| Download wp-cli (WP's command line tool) |
