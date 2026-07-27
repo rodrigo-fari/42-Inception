@@ -1,66 +1,67 @@
 # User Documentation
 
-## What this stack provides
+## Services provided
 
-This project runs three services:
+This stack includes three services:
 
-- **NGINX**: the HTTPS web server that receives browser requests.
-- **WordPress + PHP-FPM**: the application layer that generates the website.
-- **MariaDB**: the database that stores WordPress content, users, and settings.
+- NGINX: receives browser requests and serves the site over HTTPS.
+- WordPress + PHP-FPM: provides the website and admin interface.
+- MariaDB: stores posts, users, settings, and other site data.
 
-The services are connected through a private Docker network, and the website is served over HTTPS on port `443`.
+The services communicate through a private Docker network, and the public entry point is HTTPS on port 443.
 
-## Start and stop the project
+## Start and stop
 
-From the repository root, start the stack with:
+From the repository root, start everything with:
 
 ```bash
-make
+make up
 ```
 
-This builds the containers and launches them in the background.
+This builds the images, creates the host data folders if needed, and starts the containers in the background.
 
-To stop the project, run:
+To stop the stack while keeping the stored data, run:
 
 ```bash
 make down
 ```
 
-This stops and removes the containers while keeping the persistent data.
+## Access the website
 
-## Access the website and administration panel
-
-Open the website in a browser with:
+Open the site in a browser with:
 
 ```text
-https://<your_domain_name>
+https://rde-fari.42.fr
 ```
 
-The domain name is defined in the repository root `.env` file.
+The domain name comes from the root `.env` file.
 
 The WordPress administration panel is available at:
 
 ```text
-https://<your_domain_name>/wp-admin
+https://rde-fari.42.fr/wp-admin
 ```
 
-If the browser shows a certificate warning, accept it for local development. The stack uses a self-signed TLS certificate.
+If the browser shows a certificate warning, accept it for local development. The stack uses a self-signed certificate.
 
-## Manage credentials
+## Locate and manage credentials
 
-All credentials are defined in the root `.env` file and used when the containers start.
+All credentials are stored in the root `.env` file. The most important values are:
 
-Typical values include:
+- `DOMAIN_NAME`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
+- `DB_ROOT_PASS`
+- `WP_ADMIN`
+- `WP_ADMIN_PASS`
+- `WP_USER`
+- `WP_USER_PASS`
+- `WP_USER_EMAIL`
 
-- the database name
-- the MariaDB root password
-- the WordPress database user and password
-- the WordPress administrator account and password
-- the additional WordPress user account and password
+Do not commit the `.env` file.
 
-Keep the `.env` file private and do not commit it to version control.
-
-If you need to inspect the MariaDB account from the host machine, you can use:
+If you need to open a MySQL shell inside the database container, use:
 
 ```bash
 make mysql
@@ -68,16 +69,16 @@ make mysql
 
 ## Check that services are running correctly
 
-Use this command to see the container status:
+Use this command to inspect the containers:
 
 ```bash
 make status
 ```
 
-You can also confirm the stack is healthy by checking that:
+You can also verify that the stack is healthy by checking that:
 
-- `nginx` is running and reachable on HTTPS.
-- `wordpress` is running and can serve the WordPress site.
-- `mariadb` is running and the site loads without database errors.
+- `nginx` is running and answering on HTTPS.
+- `wordpress` is running and the homepage loads.
+- `mariadb` is running and the WordPress database is available.
 
-If the site does not load, check the container logs with Docker Compose.
+If something fails to load, check the container logs with Docker Compose and confirm that the `.env` file values match the expected credentials.

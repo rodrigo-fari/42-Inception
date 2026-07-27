@@ -12,9 +12,11 @@ BOLD   := \033[1m
 # ----------| Variables |
 DOCKER_COMPOSE := docker compose -f ./srcs/docker-compose.yml
 DOCKER_VOLUMES := wordpress_data mariadb_data
+DATA_DIR := $(HOME)/data
 
 # ----------| Default target |
 up:
+	@mkdir -p $(DATA_DIR)
 	@echo "$(BOLD)$(CYAN)╔════════════════════════════════════════════════════════════╗$(RESET)"
 	@echo "$(BOLD)$(CYAN)║$(RESET)             $(GREEN)🚀 INCEPTION - BUILDING CONTAINERS$(RESET)             $(CYAN)║$(RESET)"
 	@echo "$(BOLD)$(CYAN)╚════════════════════════════════════════════════════════════╝$(RESET)"
